@@ -39,7 +39,7 @@ class Site:
             lat=float(row.get("Latitude")),
             lon=float(row.get("Longitude")),
             type=row.get("Type", ""),
-            face=row.get("Face", ""),
+            face=row.get("Orientation", ""),
             length=row.get("Longueur (m)", ""),
             grade=row.get("Difficulté", ""),
             approach=row.get("Approche (min)", ""),

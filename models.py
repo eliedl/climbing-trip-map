@@ -2,11 +2,12 @@
 
 Each model owns its own row->object mapping (`from_row`), so the orchestrator
 stays a plain sequence of steps and the French column names live in one place.
-`from_row` returns None when the row lacks usable coordinates.
+Coordinates are parsed with a bare `float`: a non-numeric cell (e.g. a comma
+decimal or a blank) raises and surfaces on the CLI rather than being skipped.
 """
 from dataclasses import dataclass
 
-from normalize import canonical_region, to_float
+from normalize import corrected_region
 
 
 @dataclass
@@ -31,15 +32,12 @@ class Site:
 
     @classmethod
     def from_row(cls, row):
-        lat, lon = to_float(row.get("Latitude")), to_float(row.get("Longitude"))
-        if lat is None or lon is None:
-            return None
         return cls(
             name=row.get("Secteur", ""),
-            region=canonical_region(row.get("Région")),
+            region=corrected_region(row.get("Région")),
             subregion=row.get("Sous-région", ""),
-            lat=lat,
-            lon=lon,
+            lat=float(row.get("Latitude")),
+            lon=float(row.get("Longitude")),
             type=row.get("Type", ""),
             face=row.get("Face", ""),
             length=row.get("Longueur (m)", ""),
@@ -65,13 +63,10 @@ class Camp:
 
     @classmethod
     def from_row(cls, row):
-        lat, lon = to_float(row.get("lat.")), to_float(row.get("long."))
-        if lat is None or lon is None:
-            return None
         return cls(
             name=row.get("nom du spot ", "").strip(),
             near=row.get("proche de quel endroit", ""),
-            lat=lat,
-            lon=lon,
+            lat=float(row.get("lat.")),
+            lon=float(row.get("long.")),
             infos=row.get("infos", ""),
         )

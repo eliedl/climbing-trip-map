@@ -6,7 +6,7 @@ Paths resolve relative to this file, not the current working directory.
 from pathlib import Path
 
 from ods_reader import read_sheet
-from normalize import canonical_region  # noqa: F401  (kept for discoverability)
+from normalize import corrected_region  # noqa: F401  (kept for discoverability)
 from models import Site, Camp
 from display import region_colors
 from html_builder import build_html

@@ -44,7 +44,7 @@ Concern-separated, one responsibility per module:
 | File              | Responsibility                                                        |
 |-------------------|-----------------------------------------------------------------------|
 | `ods_reader.py`   | Parse ODS → row dicts                                                  |
-| `normalize.py`    | Region canonicalisation + `to_float`                                  |
+| `normalize.py`    | Region typo correction + `to_float`                                  |
 | `models.py`       | `Site` / `Camp` dataclasses with `from_row`                           |
 | `display.py`      | Region → colour lookup table                                          |
 | `template.html`   | Leaflet/CSS/JS shell with placeholders                                 |

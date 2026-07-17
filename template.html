@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Carte escalade — Écrins &amp; Queyras</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  #map{position:absolute;inset:0}
+  #panel{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(255,255,255,.95);
+    backdrop-filter:blur(4px);border-radius:12px;padding:12px 14px;box-shadow:0 4px 18px rgba(0,0,0,.28);
+    max-width:min(72vw,250px);max-height:80vh;overflow:auto;font-size:13px}
+  #panel h1{font-size:15px;margin:0 0 2px}
+  .sub{font-size:12px;color:#555;margin:0 0 10px}
+  .toggles{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;
+    border-bottom:1px solid #eee;padding-bottom:10px}
+  .toggles label{display:flex;align-items:center;gap:7px}
+  #legend{display:flex;flex-direction:column;gap:6px}
+  .lg{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .lg .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.3);flex:none}
+  .lg.off{opacity:.35}
+  #collapse{position:absolute;top:6px;right:8px;border:none;background:none;font-size:18px;
+    line-height:1;cursor:pointer;color:#999;padding:2px}
+  .leaflet-popup-content{font-size:13px;line-height:1.45;margin:10px 12px}
+  .leaflet-popup-content h3{margin:0 0 4px;font-size:14px}
+  .leaflet-popup-content .reg{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#777}
+  .stars{color:#e8a400}
+  .camp-icon{font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <button id="collapse" title="Réduire">–</button>
+  <h1>Escalade — Écrins &amp; Queyras</h1>
+  <p class="sub">__NSITES__ secteurs · __NCAMPS__ bivouacs</p>
+  <div class="toggles">
+    <label><input type="checkbox" id="tgSites" checked> Secteurs d'escalade</label>
+    <label><input type="checkbox" id="tgCamps" checked> Bivouacs ⛺</label>
+  </div>
+  <div id="legend"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SITES = __SITES__;
+const CAMPS = __CAMPS__;
+const COLORS = __COLORS__;
+
+const map = L.map('map', {scrollWheelZoom: true});
+L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  maxZoom: 17,
+  attribution: '© OpenTopoMap (CC-BY-SA) · © OpenStreetMap contributors'
+}).addTo(map);
+
+const esc = s => (s == null ? '' : String(s)).replace(/[&<>]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const stars = n => {
+  n = parseInt(n) || 0;
+  return n ? '<span class="stars">' + '★'.repeat(n) + '</span>' : '';
+};
+const line = (label, value) => value ? '<div>' + label + esc(value) + '</div>' : '';
+
+// --- climbing sectors, one Leaflet layer group per region ---
+const siteLayers = {};
+const activeRegions = new Set(Object.keys(COLORS));
+
+SITES.forEach(s => {
+  const colour = COLORS[s.region] || '#888';
+  const marker = L.circleMarker([s.lat, s.lon], {
+    radius: 7, color: '#fff', weight: 1.5, fillColor: colour, fillOpacity: .95
+  });
+  const starRow = (s.stars_lolo || s.stars_elie)
+    ? '<div>Lolo ' + stars(s.stars_lolo) + ' · Élie ' + stars(s.stars_elie) + '</div>' : '';
+  marker.bindPopup(
+    '<div class="reg">' + esc(s.region) + (s.subregion ? ' · ' + esc(s.subregion) : '') + '</div>' +
+    '<h3>' + esc(s.name) + '</h3>' +
+    starRow +
+    '<div>' + [s.type, s.rock, s.face && 'face ' + s.face].filter(Boolean).map(esc).join(' · ') + '</div>' +
+    line('Cotation ', s.grade) + line('Longueur ', s.length && s.length + ' m') +
+    line('Approche ', s.approach && s.approach + ' min') + line('Altitude ', s.altitude && s.altitude + ' m') +
+    line('Topo p.', s.page) +
+    (s.comment ? '<div style="margin-top:4px">' + esc(s.comment) + '</div>' : '')
+  );
+  (siteLayers[s.region] = siteLayers[s.region] || L.layerGroup()).addLayer(marker);
+});
+Object.values(siteLayers).forEach(l => l.addTo(map));
+
+// --- bivouac spots ---
+const campLayer = L.layerGroup();
+CAMPS.forEach(c => {
+  const icon = L.divIcon({
+    className: '', html: '<div class="camp-icon">⛺</div>',
+    iconSize: [22, 22], iconAnchor: [11, 20]
+  });
+  L.marker([c.lat, c.lon], {icon}).bindPopup(
+    '<div class="reg">Bivouac' + (c.near ? ' · ' + esc(c.near) : '') + '</div>' +
+    '<h3>' + esc(c.name || 'Spot') + '</h3>' +
+    (c.infos ? '<div>' + esc(c.infos) + '</div>' : '')
+  ).addTo(campLayer);
+});
+campLayer.addTo(map);
+
+// --- fit to all points ---
+map.fitBounds([...SITES, ...CAMPS].map(p => [p.lat, p.lon]), {padding: [40, 40]});
+
+// --- legend (click a region to toggle it) ---
+const legend = document.getElementById('legend');
+Object.keys(COLORS).sort().forEach(region => {
+  const row = document.createElement('div');
+  row.className = 'lg';
+  row.innerHTML = '<span class="dot" style="background:' + COLORS[region] + '"></span><span>' + esc(region) + '</span>';
+  row.onclick = () => {
+    if (activeRegions.has(region)) {
+      activeRegions.delete(region); map.removeLayer(siteLayers[region]); row.classList.add('off');
+    } else {
+      activeRegions.add(region); siteLayers[region].addTo(map); row.classList.remove('off');
+    }
+  };
+  legend.appendChild(row);
+});
+
+// --- master toggles ---
+document.getElementById('tgSites').onchange = e => {
+  Object.keys(siteLayers).forEach(region => {
+    if (e.target.checked && activeRegions.has(region)) siteLayers[region].addTo(map);
+    else map.removeLayer(siteLayers[region]);
+  });
+};
+document.getElementById('tgCamps').onchange = e => {
+  if (e.target.checked) campLayer.addTo(map); else map.removeLayer(campLayer);
+};
+
+// --- collapse panel (handy on a phone) ---
+const panel = document.getElementById('panel');
+document.getElementById('collapse').onclick = () => {
+  const hidden = panel.classList.toggle('collapsed');
+  panel.querySelectorAll('h1,.sub,.toggles,#legend').forEach(el => el.style.display = hidden ? 'none' : '');
+  document.getElementById('collapse').textContent = hidden ? '+' : '–';
+};
+</script>
+</body>
+</html>

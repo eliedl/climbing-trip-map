@@ -27,6 +27,14 @@
   .leaflet-popup-content .reg{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#777}
   .stars{color:#e8a400}
   .camp-icon{font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  /* orientation marker: rotatable white teardrop (stroke + point) under a region-coloured disk */
+  .pin{position:relative;width:var(--d);height:var(--d)}
+  .beak,.core{position:absolute;inset:0}
+  .beak{background:#fff;opacity:var(--strokeOpacity);border-radius:0 50% 50% 50%;
+    transform:rotate(calc(45deg + var(--deg)));transform-origin:center}
+  .core{margin:auto;width:calc(var(--d) - 7px);height:calc(var(--d) - 7px);
+    background:var(--color);opacity:var(--fillOpacity);border-radius:50%}
+  .pin.tous .beak{border-radius:50%;transform:none}  /* directionless disk */
 </style>
 </head>
 <body>
@@ -64,20 +72,28 @@ const line = (label, value) => value ? '<div>' + label + esc(value) + '</div>' :
 // --- climbing sectors, one Leaflet layer group per region ---
 const siteLayers = {};
 const activeRegions = new Set(Object.keys(COLORS));
+const SENTINEL_DEGREE = -9;   // "tous": directionless disk, no point
+
+const orientIcon = s => {
+  const d = 2 * s.radius;
+  const tous = s.degree === SENTINEL_DEGREE;
+  const html = '<div class="pin' + (tous ? ' tous' : '') + '" style="' +
+    '--d:' + d + 'px;--deg:' + s.degree + 'deg;--color:' + (COLORS[s.region] || '#888') +
+    ';--fillOpacity:' + s.fillOpacity + ';--strokeOpacity:' + s.strokeOpacity + '">' +
+    '<div class="beak"></div><div class="core"></div></div>';
+  return L.divIcon({className: '', html, iconSize: [d, d], iconAnchor: [d / 2, d / 2]});
+};
 
 SITES.forEach(s => {
-  const colour = COLORS[s.region] || '#888';
-  const marker = L.circleMarker([s.lat, s.lon], {
-    radius: s.radius, color: '#fff', weight: 1.5,
-    fillColor: colour, fillOpacity: s.fillOpacity, opacity: s.opacity
-  });
+  const marker = L.marker([s.lat, s.lon], {icon: orientIcon(s)});
   const starRow = (s.stars.lolo || s.stars.elie)
     ? '<div>Lolo ' + stars(s.stars.lolo) + ' · Élie ' + stars(s.stars.elie) + '</div>' : '';
+  const faceTxt = s.orientation.degree === SENTINEL_DEGREE ? 'toutes orientations' : s.orientation.label;
   marker.bindPopup(
     '<div class="reg">' + esc(s.region) + (s.subregion ? ' · ' + esc(s.subregion) : '') + '</div>' +
     '<h3>' + esc(s.name) + '</h3>' +
     starRow +
-    '<div>' + [s.type, s.rock, s.face].filter(Boolean).map(esc).join(' · ') + '</div>' +
+    '<div>' + [s.type, s.rock, faceTxt].filter(Boolean).map(esc).join(' · ') + '</div>' +
     line('Cotation ', s.grade) + line('Longueur ', s.length && s.length + ' m') +
     line('Approche ', s.approach && s.approach + ' min') + line('Altitude ', s.altitude && s.altitude + ' m') +
     line('Topo p.', s.page) +

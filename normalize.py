@@ -20,3 +20,22 @@ def corrected_region(raw):
     if key in REGION_ALIASES:
         return REGION_ALIASES[key]
     return key[:1].upper() + key[1:] if key else "Autre"
+
+
+# --- orientation aliases + bearings (folded by Orientation.from_raw) ---
+# French cardinals with the odd stray case/space; "tous" is the directionless
+# sentinel: no bearing, drawn as a plain disk.
+TOUS = "T"              # directionless sentinel label
+SENTINEL_DEGREE = -9    # its bearing: draw a plain disk, no point
+
+ORIENTATION_ALIASES = {
+    "nord": "N", "nord-est": "N-E", "est": "E", "sud-est": "S-E",
+    "sud": "S", "sud-ouest": "S-O", "ouest": "O", "nord-ouest": "N-O",
+    "tous": TOUS,
+}
+
+ORIENTATION_DEGREES = {
+    "N": 0, "N-E": 45, "E": 90, "S-E": 135,
+    "S": 180, "S-O": 225, "O": 270, "N-O": 315,
+    TOUS: SENTINEL_DEGREE,
+}

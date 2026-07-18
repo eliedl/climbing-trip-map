@@ -14,18 +14,18 @@
   /* --- the marker --- */
   /* --d: disk diameter (=2*radius from the altitude pass)
      --deg: compass bearing (N=0,E=90,S=180,W=270); -9 == "tous"
-     --color: region colour ; --fop: fill opacity ; --sop: stroke opacity */
+     --color: region colour ; --fillOpacity ; --strokeOpacity */
   .pin{position:relative;width:var(--d);height:var(--d)}
   .beak,.core{position:absolute;inset:0}
   .beak{
-    background:#fff;opacity:var(--sop);
+    background:#fff;opacity:var(--strokeOpacity);
     border-radius:0 50% 50% 50%;                 /* sharp corner = top-left */
     transform:rotate(calc(45deg + var(--deg)));  /* 45deg = corner->north offset */
     transform-origin:center;
   }
   .core{
     margin:auto;width:calc(var(--d) - 7px);height:calc(var(--d) - 7px);
-    background:var(--color);opacity:var(--fop);border-radius:50%;
+    background:var(--color);opacity:var(--fillOpacity);border-radius:50%;
   }
   /* "tous" sentinel: no beak, plain white-ringed disk */
   .pin.tous .beak{border-radius:50%;transform:none}
@@ -39,10 +39,10 @@
 
 <script>
 const COLOR = '#4363d8';
-const mk = (label, deg, d=26, fop=0.9, sop=1, tous=false) => `
+const mk = (label, deg, d=26, fillOpacity=0.9, strokeOpacity=1, tous=false) => `
   <div class="cell">
     <div class="pin ${tous ? 'tous' : ''}"
-         style="--d:${d}px;--deg:${deg}deg;--color:${COLOR};--fop:${fop};--sop:${sop}">
+         style="--d:${d}px;--deg:${deg}deg;--color:${COLOR};--fillOpacity:${fillOpacity};--strokeOpacity:${strokeOpacity}">
       <div class="beak"></div><div class="core"></div>
     </div>
     <span>${label}</span>

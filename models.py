@@ -10,6 +10,25 @@ from dataclasses import dataclass
 from normalize import corrected_region
 
 
+@dataclass(frozen=True)
+class Stars:
+    """Per-climber ratings and their mean.
+
+    `int()` parses each cell with no guard: a blank or non-numeric rating raises
+    and is surfaced (with its row) at the load boundary rather than defaulted.
+    `mean` is a field, not a property, so `dataclasses.asdict` serialises it into
+    the map payload — asdict walks fields only, a property would silently vanish.
+    """
+    lolo: int
+    elie: int
+    mean: float
+
+    @classmethod
+    def from_raw(cls, lolo, elie):
+        lolo, elie = int(lolo), int(elie)
+        return cls(lolo, elie, (lolo + elie) / 2)
+
+
 @dataclass
 class Site:
     """A climbing sector with a location and topo metadata."""
@@ -26,8 +45,7 @@ class Site:
     altitude: str
     rock: str
     page: str
-    stars_lolo: str
-    stars_elie: str
+    stars: Stars
     comment: str
 
     @classmethod
@@ -46,8 +64,7 @@ class Site:
             altitude=row.get("Altitude (m)", ""),
             rock=row.get("Roche", ""),
             page=row.get("Page", ""),
-            stars_lolo=row.get("Étoiles Lolo", ""),
-            stars_elie=row.get("Étoiles Élie", ""),
+            stars=Stars.from_raw(row.get("Étoiles Lolo"), row.get("Étoiles Élie")),
             comment=row.get("Commentaires", ""),
         )
 

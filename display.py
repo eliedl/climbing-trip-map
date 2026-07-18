@@ -16,3 +16,20 @@ def region_colors(regions):
     """Return an ordered {region: hex_colour} map for the given regions."""
     ordered = sorted(regions)
     return {region: PALETTE[i % len(PALETTE)] for i, region in enumerate(ordered)}
+
+
+# --- marker alpha from mean star rating ---
+MIN_OPACITY, MAX_OPACITY = 0.4, 1.0
+MIN_STARS, MAX_STARS = 1, 3  # rating-scale bounds; the mean maps across [MIN, MAX]
+
+
+def opacity(mean):
+    """Map a mean star rating (MIN_STARS..MAX_STARS) to a marker alpha in [MIN, MAX]."""
+    frac = (mean - MIN_STARS) / (MAX_STARS - MIN_STARS)
+    return MIN_OPACITY + frac * (MAX_OPACITY - MIN_OPACITY)
+
+
+def marker_style(site):
+    """Per-marker style derived from site data (grows with later passes)."""
+    alpha = opacity(site.stars.mean)
+    return {"fillOpacity": alpha, "opacity": alpha}

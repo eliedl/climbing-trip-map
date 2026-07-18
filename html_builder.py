@@ -2,6 +2,8 @@
 import json
 from dataclasses import asdict
 
+from display import marker_style
+
 
 def _json(obj):
     """Compact, embed-safe JSON (</script> can't appear in the payload)."""
@@ -11,7 +13,7 @@ def _json(obj):
 def build_html(template, sites, camps, colors):
     """Return the template with data placeholders substituted."""
     replacements = {
-        "__SITES__": _json([asdict(s) for s in sites]),
+        "__SITES__": _json([{**asdict(s), **marker_style(s)} for s in sites]),
         "__CAMPS__": _json([asdict(c) for c in camps]),
         "__COLORS__": _json(colors),
         "__NSITES__": str(len(sites)),

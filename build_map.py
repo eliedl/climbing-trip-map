@@ -18,8 +18,16 @@ OUTPUT_PATH = _HERE / ".." / "france" / "carte_ecrins.html"
 
 
 def _load(sheet_name, model):
-    """Read a sheet and build the model for each row that has coordinates."""
-    return [m for m in (model.from_row(r) for r in read_sheet(ODS_PATH, sheet_name)) if m]
+    """Build the model for each row, naming the offending row if parsing fails."""
+    out = []
+    for row in read_sheet(ODS_PATH, sheet_name):
+        try:
+            m = model.from_row(row)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"bad {sheet_name} row: {row}") from e
+        if m:
+            out.append(m)
+    return out
 
 
 def main():

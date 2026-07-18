@@ -42,7 +42,7 @@ class Site:
     length: str
     grade: str
     approach: str
-    altitude: str
+    altitude: float
     rock: str
     page: str
     stars: Stars
@@ -61,7 +61,7 @@ class Site:
             length=row.get("Longueur (m)", ""),
             grade=row.get("Difficulté", ""),
             approach=row.get("Approche (min)", ""),
-            altitude=row.get("Altitude (m)", ""),
+            altitude=float(row.get("Altitude (m)")),
             rock=row.get("Roche", ""),
             page=row.get("Page", ""),
             stars=Stars.from_raw(row.get("Étoiles Lolo"), row.get("Étoiles Élie")),

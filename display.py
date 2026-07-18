@@ -29,7 +29,18 @@ def opacity(mean):
     return MIN_OPACITY + frac * (MAX_OPACITY - MIN_OPACITY)
 
 
+# --- marker radius from altitude ---
+MIN_RADIUS, MAX_RADIUS = 5, 14  # px
+MIN_ALT_M, MAX_ALT_M = 900, 3200  # altitude scale (m); encompasses the data
+
+
+def radius(altitude):
+    """Map an altitude (MIN_ALT_M..MAX_ALT_M metres) to a marker radius in px."""
+    frac = (altitude - MIN_ALT_M) / (MAX_ALT_M - MIN_ALT_M)
+    return MIN_RADIUS + frac * (MAX_RADIUS - MIN_RADIUS)
+
+
 def marker_style(site):
     """Per-marker style derived from site data (grows with later passes)."""
     alpha = opacity(site.stars.mean)
-    return {"fillOpacity": alpha, "opacity": alpha}
+    return {"fillOpacity": alpha, "opacity": alpha, "radius": radius(site.altitude)}

@@ -42,5 +42,7 @@ def radius(altitude):
 
 def marker_style(site):
     """Per-marker style derived from site data (grows with later passes)."""
-    alpha = opacity(site.stars.mean)
-    return {"fillOpacity": alpha, "opacity": alpha, "radius": radius(site.altitude)}
+    alpha  = opacity(site.stars.mean)
+    size = radius(site.altitude)
+    
+    return {"fillOpacity": alpha, "opacity": alpha, "radius": size}

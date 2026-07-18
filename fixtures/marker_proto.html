@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Orientation marker prototype</title>
+<style>
+  body{margin:0;background:#6b8e6b;font-family:system-ui,sans-serif;color:#fff}
+  h1{font-size:15px;padding:12px 16px 0;margin:0}
+  p{font-size:12px;padding:0 16px;opacity:.85}
+  .grid{display:flex;flex-wrap:wrap;gap:34px;padding:28px 40px}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:14px;width:90px}
+  .cell span{font-size:12px}
+
+  /* --- the marker --- */
+  /* --d: disk diameter (=2*radius from the altitude pass)
+     --deg: compass bearing (N=0,E=90,S=180,W=270); -9 == "tous"
+     --color: region colour ; --fop: fill opacity ; --sop: stroke opacity */
+  .pin{position:relative;width:var(--d);height:var(--d)}
+  .beak,.core{position:absolute;inset:0}
+  .beak{
+    background:#fff;opacity:var(--sop);
+    border-radius:0 50% 50% 50%;                 /* sharp corner = top-left */
+    transform:rotate(calc(45deg + var(--deg)));  /* 45deg = corner->north offset */
+    transform-origin:center;
+  }
+  .core{
+    margin:auto;width:calc(var(--d) - 7px);height:calc(var(--d) - 7px);
+    background:var(--color);opacity:var(--fop);border-radius:50%;
+  }
+  /* "tous" sentinel: no beak, plain white-ringed disk */
+  .pin.tous .beak{border-radius:50%;transform:none}
+</style>
+</head>
+<body>
+<h1>Orientation marker — CSS teardrop prototype</h1>
+<p>Point should aim at the compass label. Bottom row shows radius + opacity (passes 1&nbsp;&amp;&nbsp;2) still applying. Rightmost = <code>tous</code> (-9).</p>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const COLOR = '#4363d8';
+const mk = (label, deg, d=26, fop=0.9, sop=1, tous=false) => `
+  <div class="cell">
+    <div class="pin ${tous ? 'tous' : ''}"
+         style="--d:${d}px;--deg:${deg}deg;--color:${COLOR};--fop:${fop};--sop:${sop}">
+      <div class="beak"></div><div class="core"></div>
+    </div>
+    <span>${label}</span>
+  </div>`;
+
+const compass = [['N',0],['N-E',45],['E',90],['S-E',135],['S',180],['S-O',225],['O',270],['N-O',315]];
+let html = compass.map(([l,d]) => mk(l+' · '+d+'°', d)).join('');
+// passes 1&2 still applying + the tous case
+html += mk('tous (-9)', 0, 26, 0.9, 1, true);
+html += mk('low star · small', 90, 12, 0.35, 0.6);
+html += mk('mid', 90, 20, 0.6, 0.8);
+html += mk('high star · big', 90, 30, 1.0, 1);
+document.getElementById('grid').innerHTML = html;
+</script>
+</body>
+</html>

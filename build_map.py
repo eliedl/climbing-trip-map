@@ -18,13 +18,13 @@ OUTPUT_PATH = _HERE / ".." / "france" / "carte_ecrins.html"
 
 
 def _load(sheet_name, model):
-    """Build the model for each row, naming the offending row if parsing fails."""
+    """Build the model for each row; name the row number if a cell fails to parse."""
     out = []
-    for row in read_sheet(ODS_PATH, sheet_name):
+    for n, row in enumerate(read_sheet(ODS_PATH, sheet_name), start=2):  # header is row 1
         try:
             m = model.from_row(row)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"bad {sheet_name} row: {row}") from e
+            raise ValueError(f"bad {sheet_name} row {n}") from e
         if m:
             out.append(m)
     return out

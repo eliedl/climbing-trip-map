@@ -105,7 +105,7 @@ class Camp:
     @classmethod
     def from_row(cls, row):
         return cls(
-            name=row.get("nom du spot ", "").strip(),
+            name=row.get("Nom", "").strip(),
             near=row.get("proche de quel endroit", ""),
             lat=float(row.get("lat.")),
             lon=float(row.get("long.")),

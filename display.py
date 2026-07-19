@@ -19,7 +19,7 @@ def region_colors(regions):
 
 
 # --- marker alpha from mean star rating ---
-MIN_OPACITY, MAX_OPACITY = 0.4, 1.0
+MIN_OPACITY, MAX_OPACITY = 0.5, 1.0
 MIN_STARS, MAX_STARS = 1, 3  # rating-scale bounds; the mean maps across [MIN, MAX]
 
 
@@ -30,7 +30,7 @@ def opacity(mean):
 
 
 # --- marker radius from altitude ---
-MIN_RADIUS, MAX_RADIUS = 5, 14  # px
+MIN_RADIUS, MAX_RADIUS = 7, 14  # px
 MIN_ALT_M, MAX_ALT_M = 900, 3200  # altitude scale (m); encompasses the data
 
 

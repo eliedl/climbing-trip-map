@@ -60,3 +60,7 @@ Concern-separated, one responsibility per module:
   assumed at use time.
 - Coordinates are read directly from the `Latitude` / `Longitude` headers; the source
   spreadsheet had those two headers swapped originally, now corrected at source.
+
+## Future features
+ 
+ - Add a "chosen" column to the ods and change strokeColor to black for these Sites

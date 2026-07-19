@@ -1,5 +1,8 @@
 """Normalisation concern: canonicalise region names."""
 
+import math
+import random
+
 # Canonical region names keyed by lower-cased raw spelling. The source sheet mixes
 # casing and typos (Valouise/Vallousie, "Tramouillonb"), which we fold here.
 REGION_ALIASES = {
@@ -39,3 +42,41 @@ ORIENTATION_DEGREES = {
     "S": 180, "S-O": 225, "O": 270, "N-O": 315,
     TOUS: SENTINEL_DEGREE,
 }
+
+
+# --- position de-duplication: separate markers that share a coordinate ---
+JITTER_DEGREES = 0.001  # ~100 m: nudge overlapping markers apart
+
+# The 8 real bearings; TOUS is directionless and excluded.
+_JITTER_BEARINGS = [deg for label, deg in ORIENTATION_DEGREES.items() if label != TOUS]
+
+
+def _shifted(lat, lon, bearing):
+    """Offset a coordinate by JITTER_DEGREES along a compass bearing (0=N, clockwise)."""
+    rad = math.radians(bearing)
+    return (round(lat + JITTER_DEGREES * math.cos(rad), 6),
+            round(lon + JITTER_DEGREES * math.sin(rad), 6))
+
+
+def dedupe_positions(items, rng=None):
+    """Nudge any markers sharing a (lat, lon) so they don't stack on the map.
+
+    The first item at a coordinate keeps it; each later collider is shifted
+    ~100 m along a random distinct compass bearing to the first free slot.
+    Mutates each item's .lat/.lon in place. Works on any object exposing
+    those two attributes (Site, Camp).
+    """
+    rng = rng or random.Random(0)  # fixed seed -> stable output across rebuilds
+    occupied = set()
+    for item in items:
+        pos = (item.lat, item.lon)
+        if pos not in occupied:
+            occupied.add(pos)
+            continue
+        for bearing in rng.sample(_JITTER_BEARINGS, k=len(_JITTER_BEARINGS)):
+            candidate = _shifted(item.lat, item.lon, bearing)
+            if candidate not in occupied:
+                pos = candidate
+                break
+        item.lat, item.lon = pos
+        occupied.add(pos)

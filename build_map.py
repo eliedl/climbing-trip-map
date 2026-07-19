@@ -7,6 +7,7 @@ from pathlib import Path
 
 from csv_reader import read_sheet
 from models import Site, Camp
+from normalize import dedupe_positions
 from display import region_colors
 from html_builder import build_html
 
@@ -33,6 +34,7 @@ def _load(csv_path, label, model):
 def main():
     sites = _load(SITES_CSV, "sites", Site)
     camps = _load(CAMPS_CSV, "campings", Camp)
+    dedupe_positions([*sites])  # separate overlapping markers, in place
     colors = region_colors({s.region for s in sites})
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     OUTPUT_PATH.write_text(build_html(template, sites, camps, colors), encoding="utf-8")

@@ -36,6 +36,10 @@
   .core{margin:auto;width:calc(var(--d) - 7px);height:calc(var(--d) - 7px);
     background:var(--color);opacity:var(--fillOpacity);border-radius:50%}
   .pin.tous .beak{border-radius:50%;transform:none}  /* directionless disk */
+  /* itinerary date: black label in a white pill, pinned top-right of the marker */
+  .date-pill{position:absolute;left:6px;bottom:6px;background:#fff;border-radius:999px;
+    padding:2px 8px;box-shadow:0 1px 4px rgba(0,0,0,.35);white-space:nowrap;pointer-events:none}
+  .date-pill p{margin:0;color:#000;font-size:11px;font-weight:600;line-height:1.35}
 </style>
 </head>
 <body>
@@ -86,6 +90,13 @@ const orientIcon = s => {
   return L.divIcon({className: '', html, iconSize: [d, d], iconAnchor: [d / 2, d / 2]});
 };
 
+// itinerary date label: a zero-size anchor at the marker point; the pill inside is
+// offset up-and-right in CSS, so the offset is fixed pixels regardless of label width.
+const dateIcon = s => {
+  const html = '<div class="date-pill"><p>' + esc(s.plan.label) + '</p></div>';
+  return L.divIcon({className: '', html, iconSize: [0, 0], iconAnchor: [0, 0]});
+};
+
 // planned sites (on the itinerary) get a second marker in their own layer group
 const itineraryLayer = L.layerGroup();
 
@@ -108,6 +119,7 @@ SITES.forEach(s => {
 
   if (s.plan.planned) {
     L.marker([s.lat, s.lon], {icon: orientIcon(s)}).bindPopup(popup).addTo(itineraryLayer);
+    L.marker([s.lat, s.lon], {icon: dateIcon(s), interactive: false}).addTo(itineraryLayer);
   }
 });
 Object.values(siteLayers).forEach(l => l.addTo(map));

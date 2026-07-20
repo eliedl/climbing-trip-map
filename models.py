@@ -6,9 +6,16 @@ Each parsed column goes through `_field`, which tags a bad cell with its column
 name; the loader adds the sheet and row number, so a bad value surfaces as
 sheet + row + column on the CLI rather than being skipped.
 """
-from dataclasses import dataclass
+import datetime
+from dataclasses import dataclass, field
 
-from normalize import corrected_region, ORIENTATION_ALIASES, ORIENTATION_DEGREES
+from normalize import (
+    corrected_region,
+    format_trip_date,
+    parse_vids,
+    resolve_orientation,
+    trip_date,
+)
 
 
 def _field(column, parse, *values):
@@ -46,15 +53,30 @@ class Orientation:
 
     @classmethod
     def from_raw(cls, raw):
-        label = ORIENTATION_ALIASES.get(raw.strip().lower())
-        if label is None:
-            raise ValueError(f"unknown orientation {raw!r}")
-        return cls(label, ORIENTATION_DEGREES[label])
+        return cls(*resolve_orientation(raw))
+
+
+@dataclass(frozen=True)
+class Plan:
+    """Whether a site is on the itinerary, and the day it's climbed.
+
+    `label` is a field, not a property, so `dataclasses.asdict` serialises it into
+    the map payload (asdict walks fields only). An unplanned site carries the
+    empty default; `on` stamps a date and its French label.
+    """
+    planned: bool = False
+    date: datetime.date | None = None
+    label: str = ""
+
+    @classmethod
+    def on(cls, d):
+        return cls(planned=True, date=d, label=format_trip_date(d))
 
 
 @dataclass
 class Site:
     """A climbing sector with a location and topo metadata."""
+    sid: int
     name: str
     region: str
     subregion: str
@@ -70,10 +92,12 @@ class Site:
     page: str
     stars: Stars
     comment: str
+    plan: Plan = field(default_factory=Plan)  # filled in after the itinerary join
 
     @classmethod
     def from_row(cls, row):
         return cls(
+            sid=_field("sid", int, row.get("sid")),
             name=row.get("Secteur", ""),
             region=corrected_region(row.get("Région")),
             subregion=row.get("Sous-région", ""),
@@ -110,4 +134,44 @@ class Camp:
             lat=float(row.get("lat.")),
             lon=float(row.get("long.")),
             infos=row.get("infos", ""),
+        )
+
+
+@dataclass(frozen=True)
+class Voie:
+    """A single climbing route, joined to its site by `sid`."""
+    sid: int
+    vid: int
+    name: str
+    number: int
+    length: int
+    grade: str
+
+    @classmethod
+    def from_row(cls, row):
+        return cls(
+            sid=_field("sid", int, row.get("sid")),
+            vid=_field("vid", int, row.get("vid")),
+            name=row.get("Voie", "").strip(),
+            number=_field("Numéro", int, row.get("Numéro")),
+            length=_field("Longueur (m)", int, row.get("Longueur (m)")),
+            grade=row.get("Difficulté (max)", "").strip(),
+        )
+
+
+@dataclass(frozen=True)
+class ItineraryDay:
+    """One day of the trip: which voies are climbed (empty on a rest day)."""
+    date: datetime.date
+    kind: str            # 'G' (grimpe) or 'R' (repos)
+    vids: frozenset
+    notes: str
+
+    @classmethod
+    def from_row(cls, row):
+        return cls(
+            date=_field("Mois/Jour", trip_date, row.get("Mois"), row.get("Jour")),
+            kind=row.get("Grimpe (G,R)", "").strip(),
+            vids=_field("vid", parse_vids, row.get("vid")),
+            notes=row.get("Notes", "").strip(),
         )

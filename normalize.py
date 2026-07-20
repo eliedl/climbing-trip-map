@@ -2,6 +2,7 @@
 
 import math
 import random
+from datetime import date
 
 # Canonical region names keyed by lower-cased raw spelling. The source sheet mixes
 # casing and typos (Valouise/Vallousie, "Tramouillonb"), which we fold here.
@@ -44,6 +45,14 @@ ORIENTATION_DEGREES = {
 }
 
 
+def resolve_orientation(raw):
+    """Map a raw orientation string to its canonical (label, bearing) pair."""
+    label = ORIENTATION_ALIASES.get(raw.strip().lower())
+    if label is None:
+        raise ValueError(f"unknown orientation {raw!r}")
+    return label, ORIENTATION_DEGREES[label]
+
+
 # --- position de-duplication: separate markers that share a coordinate ---
 JITTER_DEGREES = 0.001  # ~100 m: nudge overlapping markers apart
 
@@ -80,3 +89,48 @@ def dedupe_positions(items, rng=None):
                 break
         item.lat, item.lon = pos
         occupied.add(pos)
+
+
+# --- trip calendar: the itinerary sheet carries no year and names months as French
+# abbreviations. TRIP_YEAR stamps the plan dates; the two maps fold month <-> label.
+TRIP_YEAR = 2026
+MONTH_NUMBERS = {"juil.": 7, "août": 8}          # sheet label (lower-cased) -> month
+MONTH_ABBR = {7: "juil.", 8: "août"}             # month -> display abbreviation
+
+
+def month_number(raw):
+    """Map a French month abbreviation ('Juil.', 'Août') to its month number."""
+    key = (raw or "").strip().lower()
+    try:
+        return MONTH_NUMBERS[key]
+    except KeyError:
+        raise ValueError(f"unknown month {raw!r}")
+
+
+def trip_date(month_raw, day):
+    """Assemble a plan date from the sheet's month label and day-of-month."""
+    return date(TRIP_YEAR, month_number(month_raw), int(day))
+
+
+def format_trip_date(d):
+    """Render a plan date as a compact French label, e.g. '24 juil.'."""
+    return f"{d.day} {MONTH_ABBR[d.month]}"
+
+
+def parse_vids(raw):
+    """Parse an itinerary vid cell into a set of voie ids.
+
+    Cells are a single id ('39'), an inclusive range ('23 - 38', '71-74', '9 -10'),
+    or blank (a rest day). Whitespace around the dash varies in the source.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return frozenset()
+    parts = [p.strip() for p in text.split("-")]
+    if len(parts) > 2:
+        raise ValueError(f"malformed vid range {raw!r}")
+    nums = [int(p) for p in parts]
+    if len(nums) == 1:
+        return frozenset(nums)
+    lo, hi = nums
+    return frozenset(range(lo, hi + 1))

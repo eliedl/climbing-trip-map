@@ -7,7 +7,7 @@ from display import marker_style
 
 def _json(obj):
     """Compact, embed-safe JSON (</script> can't appear in the payload)."""
-    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+    return json.dumps(obj, ensure_ascii=False, default=str).replace("</", "<\\/")
 
 
 def build_html(template, sites, camps, colors):

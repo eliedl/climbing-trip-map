@@ -16,6 +16,7 @@
   .toggles{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;
     border-bottom:1px solid #eee;padding-bottom:10px}
   .toggles label{display:flex;align-items:center;gap:7px}
+  .toggles label.child{margin-left:22px;font-size:12px;color:#555}
   #legend{display:flex;flex-direction:column;gap:6px}
   .lg{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
   .lg .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.3);flex:none}
@@ -45,6 +46,7 @@
   <p class="sub">__NSITES__ secteurs · __NCAMPS__ bivouacs</p>
   <div class="toggles">
     <label><input type="checkbox" id="tgSites" checked> Secteurs d'escalade</label>
+    <label class="child"><input type="checkbox" id="triggerItinerary"> Itinéraire</label>
     <label><input type="checkbox" id="tgCamps" checked> Bivouacs ⛺</label>
   </div>
   <div id="legend"></div>
@@ -84,12 +86,14 @@ const orientIcon = s => {
   return L.divIcon({className: '', html, iconSize: [d, d], iconAnchor: [d / 2, d / 2]});
 };
 
+// planned sites (on the itinerary) get a second marker in their own layer group
+const itineraryLayer = L.layerGroup();
+
 SITES.forEach(s => {
-  const marker = L.marker([s.lat, s.lon], {icon: orientIcon(s)});
   const starRow = (s.stars.lolo || s.stars.elie)
     ? '<div>Lolo ' + stars(s.stars.lolo) + ' · Élie ' + stars(s.stars.elie) + '</div>' : '';
   const faceTxt = s.orientation.degree === SENTINEL_DEGREE ? 'toutes orientations' : s.orientation.label;
-  marker.bindPopup(
+  const popup =
     '<div class="reg">' + esc(s.region) + (s.subregion ? ' · ' + esc(s.subregion) : '') + '</div>' +
     '<h3>' + esc(s.name) + '</h3>' +
     starRow +
@@ -97,9 +101,14 @@ SITES.forEach(s => {
     line('Cotation ', s.grade) + line('Longueur ', s.length && s.length + ' m') +
     line('Approche ', s.approach && s.approach + ' min') + line('Altitude ', s.altitude && s.altitude + ' m') +
     line('Topo p.', s.page) +
-    (s.comment ? '<div style="margin-top:4px">' + esc(s.comment) + '</div>' : '')
-  );
+    (s.comment ? '<div style="margin-top:4px">' + esc(s.comment) + '</div>' : '');
+
+  const marker = L.marker([s.lat, s.lon], {icon: orientIcon(s)}).bindPopup(popup);
   (siteLayers[s.region] = siteLayers[s.region] || L.layerGroup()).addLayer(marker);
+
+  if (s.plan.planned) {
+    L.marker([s.lat, s.lon], {icon: orientIcon(s)}).bindPopup(popup).addTo(itineraryLayer);
+  }
 });
 Object.values(siteLayers).forEach(l => l.addTo(map));
 
@@ -138,12 +147,30 @@ Object.keys(COLORS).sort().forEach(region => {
 });
 
 // --- master toggles ---
-document.getElementById('tgSites').onchange = e => {
-  Object.keys(siteLayers).forEach(region => {
-    if (e.target.checked && activeRegions.has(region)) siteLayers[region].addTo(map);
-    else map.removeLayer(siteLayers[region]);
-  });
+const tgSites = document.getElementById('tgSites');
+const triggerItinerary = document.getElementById('triggerItinerary');
+
+const showSiteLayers = on => Object.keys(siteLayers).forEach(region => {
+  if (on && activeRegions.has(region)) siteLayers[region].addTo(map);
+  else map.removeLayer(siteLayers[region]);
+});
+
+// Sectors and itinerary are mutually exclusive: turning one on turns the other off.
+tgSites.onchange = e => {
+  if (e.target.checked && triggerItinerary.checked) {
+    triggerItinerary.checked = false;
+    map.removeLayer(itineraryLayer);
+  }
+  showSiteLayers(e.target.checked);
 };
+triggerItinerary.onchange = e => {
+  if (e.target.checked && tgSites.checked) {
+    tgSites.checked = false;
+    showSiteLayers(false);
+  }
+  if (e.target.checked) itineraryLayer.addTo(map); else map.removeLayer(itineraryLayer);
+};
+
 document.getElementById('tgCamps').onchange = e => {
   if (e.target.checked) campLayer.addTo(map); else map.removeLayer(campLayer);
 };

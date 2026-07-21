@@ -9,7 +9,7 @@ from csv_reader import read_sheet
 from models import Site, Camp, Voie, ItineraryDay
 from normalize import dedupe_positions
 from display import region_colors
-from itinerary import plan_sites
+from itinerary import plan_sites, attach_voies
 from html_builder import build_html
 
 _HERE = Path(__file__).resolve().parent
@@ -39,7 +39,8 @@ def main():
     camps = _load(CAMPS_CSV, "campings", Camp)
     voies = _load(VOIES_CSV, "voies", Voie)
     days = _load(ITINERARY_CSV, "itinéraire", ItineraryDay)
-    plan_sites(sites, voies, days)  # stamp each site's .planned, in place
+    plan_sites(sites, voies, days)  # stamp each site's .plan, in place
+    attach_voies(sites, voies)      # group each site's routes onto it, in place
     dedupe_positions([*sites])  # separate overlapping markers, in place
     colors = region_colors({s.region for s in sites})
     template = TEMPLATE_PATH.read_text(encoding="utf-8")

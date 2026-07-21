@@ -13,3 +13,12 @@ def plan_sites(sites, voies, days):
     for site in sites:
         if site.sid in date_of:
             site.plan = Plan.on(date_of[site.sid])
+
+
+def attach_voies(sites, voies):
+    """Group each site's routes onto it by `sid`, in place."""
+    by_sid = {}
+    for v in voies:
+        by_sid.setdefault(v.sid, []).append(v)
+    for site in sites:
+        site.voies = sorted(by_sid.get(site.sid, []), key=lambda v: v.number)

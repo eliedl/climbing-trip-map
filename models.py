@@ -92,7 +92,8 @@ class Site:
     page: str
     stars: Stars
     comment: str
-    plan: Plan = field(default_factory=Plan)  # filled in after the itinerary join
+    plan: Plan = field(default_factory=Plan)   # filled in after the itinerary join
+    voies: list = field(default_factory=list)  # the site's routes, grouped by sid
 
     @classmethod
     def from_row(cls, row):

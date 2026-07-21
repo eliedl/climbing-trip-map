@@ -40,6 +40,15 @@
   .date-pill{position:absolute;left:6px;bottom:6px;background:#fff;border-radius:999px;
     padding:2px 8px;box-shadow:0 1px 4px rgba(0,0,0,.35);white-space:nowrap;pointer-events:none}
   .date-pill p{margin:0;color:#000;font-size:11px;font-weight:600;line-height:1.35}
+  /* planned routes: indented, fixed-height scroll list inside the itinerary popup */
+  .pr-title{margin:8px 0 3px;font-weight:600}
+  .planned-routes{margin-left:10px;max-height:120px;overflow-y:scroll;
+    -webkit-overflow-scrolling:touch;border-left:2px solid #eee;padding-left:7px}
+  .planned-routes .route{display:flex;gap:8px;font-size:12px;line-height:1.6}
+  .planned-routes .num{color:#999;min-width:1.6em;text-align:right;flex:none}
+  .planned-routes .name{flex:1}
+  .planned-routes .grade{color:#333;white-space:nowrap;flex:none}
+  .planned-routes .len{color:#777;white-space:nowrap;flex:none}
 </style>
 </head>
 <body>
@@ -118,7 +127,14 @@ SITES.forEach(s => {
   (siteLayers[s.region] = siteLayers[s.region] || L.layerGroup()).addLayer(marker);
 
   if (s.plan.planned) {
-    L.marker([s.lat, s.lon], {icon: orientIcon(s)}).bindPopup(popup).addTo(itineraryLayer);
+    const routes = s.voies.map(v =>
+      '<div class="route"><span class="num">' + esc(v.number) + '</span>' +
+      '<span class="name">' + esc(v.name) + '</span>' +
+      '<span class="grade">' + esc(v.grade) + '</span>' +
+      '<span class="len">' + esc(v.length) + ' m</span></div>').join('');
+    const planned = '<div class="pr-title">Voies planifiées</div>' +
+      '<div class="planned-routes">' + routes + '</div>';
+    L.marker([s.lat, s.lon], {icon: orientIcon(s)}).bindPopup(popup + planned).addTo(itineraryLayer);
     L.marker([s.lat, s.lon], {icon: dateIcon(s), interactive: false}).addTo(itineraryLayer);
   }
 });
